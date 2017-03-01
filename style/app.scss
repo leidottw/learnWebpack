@@ -1,0 +1,10 @@
+body.blue {
+    color: white;
+    background-color: blue;
+
+    pre {
+        white-space: pre-line;
+    }
+
+    @import 'a';
+}

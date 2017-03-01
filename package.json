@@ -1,0 +1,24 @@
+{
+  "name": "learnWebpack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/app.bundle.js",
+  "scripts": {
+    "start": "webpack",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Ray Shen <leidottw@gmail.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "css-loader": "^0.26.2",
+    "extract-text-webpack-plugin": "^2.0.0",
+    "node-sass": "^4.5.0",
+    "sass-loader": "^6.0.2",
+    "webpack": "^2.2.1"
+  },
+  "dependencies": {
+    "moment": "^2.17.1",
+    "sass-loader": "^6.0.2"
+  }
+}
