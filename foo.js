@@ -20,5 +20,7 @@ Technical information:
 
 *** STOP: 0x0000000A (0x00000000, 0x00000002, 0x00000000, 0x807C857A)
 
-${moment().format()}</pre>`
+${moment().format()}</pre>`;
+
+console.log('test sourcemap');
 }, 500);
