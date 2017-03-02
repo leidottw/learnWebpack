@@ -5,12 +5,13 @@ const ExtractTextPlugin = require("extract-text-webpack-plugin");
 const isProduction = process.env.NODE_ENV === 'production';
 
 module.exports = {
-    target: 'async-node',
+    target: 'web',
     entry: './foo.js',
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'app.bundle.js'
     },
+    devtool: (isProduction) ? 'nosources-source-map' : 'eval-source-map',
     module: {
         rules: [
             {
