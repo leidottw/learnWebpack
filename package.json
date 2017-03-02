@@ -5,12 +5,16 @@
   "main": "dist/app.bundle.js",
   "scripts": {
     "start": "webpack",
+    "build": "webpack --optimize-minimize --define process.env.NODE_ENV='production'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "Ray Shen <leidottw@gmail.com>",
   "license": "ISC",
   "devDependencies": {
+    "babel-core": "^6.23.1",
+    "babel-loader": "^6.3.2",
+    "babel-preset-latest": "^6.22.0",
     "css-loader": "^0.26.2",
     "extract-text-webpack-plugin": "^2.0.0",
     "node-sass": "^4.5.0",
