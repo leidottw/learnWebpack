@@ -1,14 +1,15 @@
 const webpack = require('webpack');
 const path = require('path');
-const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
 module.exports = {
     target: 'web',
-    entry: './foo.js',
+    entry: path.resolve(__dirname, 'src/app.js'),
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: (isProduction) ? path.resolve(__dirname, 'prod') : path.resolve(__dirname, 'dev'),
         filename: 'app.bundle.js'
     },
     devtool: (isProduction) ? 'nosources-source-map' : 'eval-source-map',
@@ -66,7 +67,16 @@ module.exports = {
         ]
     },
     plugins: [
-        new ExtractTextPlugin('app.css'),
-        new webpack.SourceMapDevToolPlugin()
-    ]
+        // new ExtractTextPlugin('app.css'),
+        new HtmlWebpackPlugin({
+            title: 'learnWebpack'
+        })
+    ],
+    devServer: {
+        contentBase: path.join(__dirname, 'dev'),
+        compress: true,
+        proxy: {
+            '/api': 'http://172.17.20.49:8080/video/'
+        }
+    }
 };

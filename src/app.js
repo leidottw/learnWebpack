@@ -1,4 +1,4 @@
-import './style/app.scss';
+import './scss/app.scss';
 import moment from 'moment';
 
 setTimeout(function init() {
