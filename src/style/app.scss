@@ -1,0 +1,23 @@
+.blue {
+    font-size: 1.5em;
+    color: white;
+    background-color: blue;
+
+    pre {
+        white-space: pre-line;
+    }
+
+    @import 'a';
+}
+
+.red {
+    font-size: 1.5em;
+    color: white;
+    background-color: red;
+
+    pre {
+        white-space: pre-line;
+    }
+
+    @import 'a';
+}

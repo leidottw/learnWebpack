@@ -1,26 +1,35 @@
-import './scss/app.scss';
-import moment from 'moment';
+import './style/app.scss';
 
-setTimeout(function init() {
-    document.querySelector('body').className = 'blue';
-    document.querySelector('body').innerHTML =
-`<pre>A problem has been detected and windows has been shotdown to prevent damage to your computer.
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { createStore, combineReducers } from 'redux';
+import { Provider } from 'react-redux';
+import { Router, Route, IndexRoute, browserHistory } from 'react-router';
+import { syncHistoryWithStore, routerReducer } from 'react-router-redux';
 
-IRQL_NOT_LESS_OR_EQUAL
+// import reducers form './reducers'
+import * as reducers from './reducers';
 
-If this is the first time you've seen this stop error screen, restart your computer. If this screen appers again, follow these steps:
+// import components form './reducers'
+import { Blue, Red } from './components';
 
-Check to make sure any new hardware or software is properly installed.
-If this is a new installation, ask your hardware or software manufacurer for any windows updates you might need.
+// Add the reducer to your store on the `routing` key
+const store = createStore(
+    combineReducers({
+        routing: routerReducer,
+        ...reducers
+    })
+);
 
-If problems contine, disable or remove any newly installed hardware or software. Disable BIOS memory options such as caching or shadowing.
-If yout need to use safe mode to remove or disable components restart your compute, press F8 to select Advanced Starup Options, and then select Safe Mode.
+// Create an enhanced history that syncs navigation events with the store
+const history = syncHistoryWithStore(browserHistory, store)
 
-Technical information:
-
-*** STOP: 0x0000000A (0x00000000, 0x00000002, 0x00000000, 0x807C857A)
-
-${moment().format()}</pre>`;
-
-console.log('test sourcemap');
-}, 500);
+ReactDOM.render(
+    <Provider store={store}>
+        <Router history={history}>
+            <Route path="/" component={Blue} />
+            <Route path="/red" component={Red} />
+        </Router>
+    </Provider>,
+    document.getElementById('container')
+);

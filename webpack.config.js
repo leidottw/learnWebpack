@@ -20,7 +20,7 @@ module.exports = {
                     {
                         loader: 'babel-loader',
                         options: {
-                            presets: ['latest', 'react', 'stage-3']
+                            presets: ['latest', 'react', 'stage-1']
                         }
                     }
                 ]
@@ -66,14 +66,16 @@ module.exports = {
         ]
     },
     plugins: [
+        // 分離css
         // new ExtractTextPlugin('app.css'),
         new HtmlWebpackPlugin({
-            title: 'learnWebpack'
+            template: './src/index.html'
         })
     ],
     devServer: {
         contentBase: path.join(__dirname, 'dev'),
         compress: true,
+        historyApiFallback: true,
         proxy: {
             '/api': 'http://172.17.20.49:8080/video/'
         }
