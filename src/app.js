@@ -11,7 +11,7 @@ import { syncHistoryWithStore, routerReducer } from 'react-router-redux';
 import * as reducers from './reducers';
 
 // import components form './reducers'
-import { Blue, Red } from './components';
+import { Blue, Red, Editor, Quill } from './components';
 
 // Add the reducer to your store on the `routing` key
 const store = createStore(
@@ -29,6 +29,8 @@ ReactDOM.render(
         <Router history={history}>
             <Route path="/" component={Blue} />
             <Route path="/red" component={Red} />
+            <Route path="/editor" component={Editor} />
+            <Route path="/editor2" component={Quill} />
         </Router>
     </Provider>,
     document.getElementById('container')
