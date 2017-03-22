@@ -4,6 +4,8 @@ import Quill from 'quill';
 
 class MyEditor extends React.Component {
     componentDidMount() {
+        var saved = `{"ops":[{"attributes":{"color":"red"},"insert":"fefe"},{"insert":"\n"},{"attributes":{"color":"green"},"insert":"feefef"},{"insert":"\n\n"},{"attributes":{"color":"green","strike":true},"insert":"ewfwefewfwef"},{"insert":"\n\n"},{"attributes":{"underline":true,"strike":true,"italic":true,"color":"green","bold":true},"insert":"fewfwefewf"},{"attributes":{"list":"bullet"},"insert":"\n"}]}`;
+
         var toolbarOptions = [
             ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
             ['blockquote', 'code-block'],
@@ -17,18 +19,22 @@ class MyEditor extends React.Component {
             [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
             [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
 
-            [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+            [{ 'color': ['red', 'green'] }, { 'background': [] }],          // dropdown with defaults from theme
             [{ 'font': [] }],
             [{ 'align': [] }],
 
             ['clean']                                         // remove formatting button
         ];
 
+        window.Delta = Quill.import('delta');
+
         let quill = new Quill(this.refs.editor, {
-            // modules: {
-            //     toolbar: toolbarOptions
-            // }
+            modules: {
+                toolbar: toolbarOptions
+            }
         });
+// console.log(saved)
+//         quill.setContents(JSON.parse(saved));
 
         quill.keyboard.addBinding({
             key: 'B',
@@ -36,6 +42,14 @@ class MyEditor extends React.Component {
         }, function(range, context) {
             console.log('shift + B')
             this.quill.formatText(range, 'bold', true)
+        });
+
+        quill.keyboard.addBinding({
+            key: 'I',
+            shiftKey: true
+        }, function(range, context) {
+            console.log('shift + I')
+            this.quill.formatText(range, 'italic', true)
         });
 
         console.log(quill)

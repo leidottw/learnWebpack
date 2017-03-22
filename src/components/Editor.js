@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router';
-import {Editor, EditorState, RichUtils, convertFromRaw, convertToRaw} from 'draft-js';
+import {Editor, EditorState, RichUtils, convertFromRaw, convertToRaw, CompositeDecorator, ContentBlock} from 'draft-js';
 
 const colorStyleMap = {
     red: {
@@ -31,18 +31,72 @@ class MyEditor extends React.Component {
         super(props);
 
         let saved = `{"entityMap":{},"blocks":[{"key":"99qlt","text":"console.log(1)","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}},{"key":"3h4fb","text":"","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}},{"key":"7d350","text":"abcdeft","type":"unstyled","depth":0,"inlineStyleRanges":[{"offset":0,"length":7,"style":"STRIKETHROUGH"}],"entityRanges":[],"data":{}},{"key":"slu","text":"","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}},{"key":"cavid","text":"ggkkggk","type":"unstyled","depth":0,"inlineStyleRanges":[{"offset":0,"length":7,"style":"blue"}],"entityRanges":[],"data":{}}]}`;
-        this.state = {editorState: EditorState.createWithContent(convertFromRaw(JSON.parse(saved)))};
+
+        // decorator
+        // Note: these aren't very good regexes, don't use them!
+        const HANDLE_REGEX = /\@[\w]+/g;
+        const HASHTAG_REGEX = /\#[\w\u0590-\u05ff]+/g;
+
+        function handleStrategy(contentBlock, callback, contentState) {
+            findWithRegex(HANDLE_REGEX, contentBlock, callback);
+        }
+
+        function hashtagStrategy(contentBlock, callback, contentState) {
+            findWithRegex(HASHTAG_REGEX, contentBlock, callback);
+        }
+
+        function findWithRegex(regex, contentBlock, callback) {
+          const text = contentBlock.getText();
+          let matchArr, start;
+          while ((matchArr = regex.exec(text)) !== null) {
+                start = matchArr.index;
+                callback(start, start + matchArr[0].length);
+          }
+        }
+
+        const HandleSpan = (props) => {
+            return <span {...props} style={{backgroundColor: 'red'}}>{props.children}</span>;
+        };
+
+        const HashtagSpan = (props) => {
+            return <span {...props} style={{backgroundColor: 'green'}}>{props.children}</span>;
+        };
+
+        const compositeDecorator = new CompositeDecorator([
+          {
+            strategy: handleStrategy,
+            component: HandleSpan,
+          },
+          {
+            strategy: hashtagStrategy,
+            component: HashtagSpan,
+          },
+        ]);
+
+        this.state = {editorState: EditorState.createWithContent(convertFromRaw(JSON.parse(saved)), compositeDecorator)};
         // this.state = {editorState: EditorState.createEmpty()};
 
         this.onChange = (editorState) => {
             let file = convertToRaw(editorState.getCurrentContent());
-            // console.log('save: ' + JSON.stringify(file));
+            console.log(JSON.stringify(file));
 
             let selectionState = editorState.getSelection();
-            console.log(selectionState.getAnchorKey())
-            console.log(selectionState.getStartOffset())
-            console.log(selectionState.getEndOffset())
+            // window.editorState = editorState;
+            // window.selectionState = selectionState;
+            // window.ContentBlock = ContentBlock;
+            // console.log(selectionState.getAnchorKey())
+            // console.log(selectionState.getStartOffset())
+            // console.log(selectionState.getEndOffset())
             return this.setState({editorState});
+        }
+
+        window.remoteEdit = () => {
+            let saved = `{"entityMap":{},"blocks":[{"key":"99qlt","text":"console.log(1)","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}},{"key":"3h4fb","text":"","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}},{"key":"7d350","text":"abcdeft","type":"unstyled","depth":0,"inlineStyleRanges":[{"offset":0,"length":7,"style":"STRIKETHROUGH"}],"entityRanges":[],"data":{}},{"key":"slu","text":"","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}},{"key":"cavid","text":"ggkk","type":"unstyled","depth":0,"inlineStyleRanges":[{"offset":0,"length":7,"style":"blue"}],"entityRanges":[],"data":{}}]}`;
+
+            const editorState = EditorState.push(this.state.editorState, convertFromRaw(JSON.parse(saved)));
+            this.setState({
+                editorState
+            });
         }
     }
 
