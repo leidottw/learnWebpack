@@ -1,43 +1,52 @@
 import React from 'react';
-import { Link } from 'react-router';
 import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
-import { Schema, DOMParser, Fragement } from 'prosemirror-model';
+// import { DOMParser } from 'prosemirror-model';
 import { schema } from 'prosemirror-schema-basic';
+// import { exampleSetup } from 'prosemirror-example-setup';
+import History from 'prosemirror-history';
+import { keymap } from 'prosemirror-keymap';
 
-class MyEditor extends React.Component {
+class ProseMirror extends React.Component {
+    constructor(props) {
+        super(props);
+    }
 
     componentDidMount() {
-        const footnote = {
-            group: "inline",
-            content: "inline*",
-            inline: true,
-            draggable: true,
-            atom: true,
-            toDOM: () => ["footnote", 0],
-            parseDOM: [{tag: "footnote"}]
-        };
-
-        const footnoteSchema = new Schema({
-            nodes: schema.spec.nodes.addBefore("image", "footnote", footnote),
-            marks: schema.spec.marks
+        this.editorState = EditorState.create({
+            schema,
+            plugins: [
+                History.history(),
+                keymap({
+                    'Mod-z': History.undo,
+                    'Mod-y': History.redo
+                })
+            ]
         });
 
-        var view = new EditorView(this.refs.editor, {
-            state: EditorState.create({
-                doc: DOMParser.fromSchema(footnoteSchema).parse(document.querySelector("#content"))
-            }),
+        this.editor = new EditorView(this.refs.editor, {
+            state: this.editorState
         });
+    }
+
+    serialize = () => {
+        console.log(this.editorState.doc.toJSON());
+        console.log(this.editorState)
+    }
+
+    destroy = () => {
+        this.editor.destroy();
     }
 
     render() {
         return (
             <div>
-                <div id="content">122223</div>
-                <div ref="editor"></div>
+                <div id="editor" ref="editor"></div>
+                <button onClick={this.serialize}>serialize</button>
+                <button onClick={this.destroy}>destroy</button>
             </div>
         );
     }
 };
 
-export default MyEditor;
+export default ProseMirror;
