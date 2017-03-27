@@ -38,6 +38,15 @@
     "draft-js-table": "^0.3.0",
     "html-webpack-plugin": "^2.28.0",
     "moment": "^2.17.1",
+    "prosemirror-commands": "^0.19.0",
+    "prosemirror-example-setup": "^0.19.0",
+    "prosemirror-history": "^0.19.0",
+    "prosemirror-keymap": "^0.19.0",
+    "prosemirror-menu": "^0.19.0",
+    "prosemirror-model": "^0.19.0",
+    "prosemirror-schema-basic": "^0.19.0",
+    "prosemirror-state": "^0.19.1",
+    "prosemirror-view": "^0.19.1",
     "quill": "^1.2.2",
     "sass-loader": "^6.0.2"
   }
