@@ -76,6 +76,7 @@ module.exports = {
         contentBase: path.join(__dirname, 'dev'),
         compress: true,
         historyApiFallback: true,
+        port: 8088,
         proxy: {
             '/api': 'http://172.17.20.49:8080/video/'
         }
