@@ -3,11 +3,14 @@ import { EditorState } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import { Schema, DOMParser } from 'prosemirror-model';
 import { nodes, marks } from 'prosemirror-schema-basic';
+// import { nodes, marks } from 'prosemirror-schema-table';
+import { addListNodes, wrapInList, orderedList, bulletList } from 'prosemirror-schema-list';
 import { exampleSetup, buildMenuItems, buildKeymap } from 'prosemirror-example-setup';
 import { history, undo, redo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import { menuBar, MenuItem, Dropdown, DropdownSubmenu, renderGrouped, icons, joinUpItem, liftItem, selectParentNodeItem, undoItem, redoItem, wrapItem, blockTypeItem } from 'prosemirror-menu'; // menuBar提供浮動置頂,
 import { baseKeymap, toggleMark } from 'prosemirror-commands';
+import { findWrapping } from 'prosemirror-transform';
 
 class ProseMirror extends React.Component {
     constructor(props) {
@@ -30,10 +33,23 @@ class ProseMirror extends React.Component {
             }
         });
 
+        let extNodes = Object.assign({}, nodes, {
+            ordered_list: orderedList,
+            bullet_list: bulletList
+        });
+
         let schema = new Schema({
-            nodes,
+            nodes: extNodes,
             marks: extMarks
         });
+
+        console.log(schema);
+
+        // let schema2 = new Schema({
+        //     nodes: addListNodes(schema.spec.nodes, "paragraph block*", "block"),
+        //     marks: schema.spec.marks
+        // });
+
 
         // console.log(exampleSetup({schema}))
         // let r = buildMenuItems(schema);
@@ -302,7 +318,50 @@ class ProseMirror extends React.Component {
                         ], {
                             label: '**樣式',
                             title: '**樣式'
-                        })
+                        }),
+                        new MenuItem({
+                            select(state) {
+                                return true;
+                                console.log(schema.marks.strong)
+                                console.log(schema.nodes.bullet_list)
+                                console.log(wrapInList(schema.nodes.bullet_list))
+
+                                let {$from, $to} = state.selection
+                                let range = $from.blockRange($to), doJoin = false, outerRange = range
+                                console.log(range)
+                                let wrap = findWrapping(outerRange, schema.nodes.bullet_list, undefined, range)
+                                console.log(wrap)
+                                return wrapInList(schema.nodes.bullet_list)(state);
+                            },
+                            onDeselected: 'disable',
+                            icon: {
+                                dom: (() => {
+                                    let node = document.createElement('div');
+                                    node.innerText = '無序序列';
+                                    return node;
+                                })()
+                            },
+                            label: '',
+                            title: '無序序列',
+                            run: wrapInList(schema.nodes.bullet_list)
+                        }),
+                        new MenuItem({
+                            select(state) {
+                                return true;
+                                return wrapInList(schema.nodes.ordered_list)(state);
+                            },
+                            onDeselected: 'disable',
+                            icon: {
+                                dom: (() => {
+                                    let node = document.createElement('div');
+                                    node.innerText = '有序序列';
+                                    return node;
+                                })()
+                            },
+                            label: '',
+                            title: '有序序列',
+                            run: wrapInList(schema.nodes.ordered_list)
+                        }),
                         // MenuItem Template
                         // new MenuItem({
                         //     select(state) {
