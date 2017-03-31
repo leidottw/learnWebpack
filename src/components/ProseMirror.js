@@ -4,13 +4,13 @@ import { EditorView } from 'prosemirror-view';
 import { Schema, DOMParser } from 'prosemirror-model';
 import { nodes, marks } from 'prosemirror-schema-basic';
 // import { nodes, marks } from 'prosemirror-schema-table';
-import { addListNodes, wrapInList, orderedList, bulletList } from 'prosemirror-schema-list';
+import { addListNodes, wrapInList, orderedList, bulletList, splitListItem, sinkListItem, liftListItem } from 'prosemirror-schema-list';
 import { exampleSetup, buildMenuItems, buildKeymap } from 'prosemirror-example-setup';
 import { history, undo, redo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
-import { menuBar, MenuItem, Dropdown, DropdownSubmenu, renderGrouped, icons, joinUpItem, liftItem, selectParentNodeItem, undoItem, redoItem, wrapItem, blockTypeItem } from 'prosemirror-menu'; // menuBar提供浮動置頂,
-import { baseKeymap, toggleMark } from 'prosemirror-commands';
-import { findWrapping } from 'prosemirror-transform';
+import { menuBar, MenuItem, Dropdown, DropdownSubmenu, renderGrouped, icons, wrapItem, blockTypeItem } from 'prosemirror-menu'; // menuBar提供浮動置頂,
+import * as commands from 'prosemirror-commands';
+// import { findWrapping } from 'prosemirror-transform';
 
 class ProseMirror extends React.Component {
     constructor(props) {
@@ -33,49 +33,74 @@ class ProseMirror extends React.Component {
             }
         });
 
-        let extNodes = Object.assign({}, nodes, {
-            ordered_list: orderedList,
-            bullet_list: bulletList
-        });
-
         let schema = new Schema({
-            nodes: extNodes,
+            nodes,
             marks: extMarks
         });
 
-        console.log(schema);
+        let nsSchema = new Schema({
+            nodes: addListNodes(schema.spec.nodes, "paragraph block*", "block"),
+            marks: schema.spec.marks
+        });
 
-        // let schema2 = new Schema({
-        //     nodes: addListNodes(schema.spec.nodes, "paragraph block*", "block"),
-        //     marks: schema.spec.marks
-        // });
+        // keymap start
+        let baseKeymap = {
+            "Enter": commands.chainCommands(splitListItem(nsSchema.nodes.list_item), commands.newlineInCode, commands.createParagraphNear, commands.liftEmptyBlock, commands.splitBlock),
+            "Mod-Enter": commands.exitCode,
 
+            "Backspace": commands.chainCommands(commands.deleteSelection, commands.joinBackward),
+            "Mod-Backspace": commands.chainCommands(commands.deleteSelection, commands.joinBackward),
+            "Delete": commands.chainCommands(commands.deleteSelection, commands.joinForward),
+            "Mod-Delete": commands.chainCommands(commands.deleteSelection, commands.joinForward),
 
-        // console.log(exampleSetup({schema}))
-        // let r = buildMenuItems(schema);
-        // console.log(r);
+            "Alt-ArrowUp": commands.joinUp,
+            "Alt-ArrowDown": commands.joinDown,
+            "Mod-BracketLeft": commands.lift,
+            "Escape": commands.selectParentNode,
+
+            'Mod-z': undo,
+            'Mod-y': redo,
+            'Mod-[': liftListItem(nsSchema.nodes.list_item),
+            'Mod-]': sinkListItem(nsSchema.nodes.list_item)
+        };
+
+        // declare global: os, navigator
+        const mac = typeof navigator != "undefined" ? /Mac/.test(navigator.platform)
+                : typeof os != "undefined" ? os.platform() == "darwin" : false
+
+        if (mac) {
+            let extra = {
+                "Ctrl-h": baseKeymap["Backspace"],
+                "Alt-Backspace": baseKeymap["Mod-Backspace"],
+                "Ctrl-d": baseKeymap["Delete"],
+                "Ctrl-Alt-Backspace": baseKeymap["Mod-Delete"],
+                "Alt-Delete": baseKeymap["Mod-Delete"],
+                "Alt-d": baseKeymap["Mod-Delete"]
+            }
+            for (let prop in extra) baseKeymap[prop] = extra[prop]
+        }
+        // keymap end
 
         this.editorState = EditorState.create({
-            schema,
+            schema: nsSchema,
             // plugins: exampleSetup({schema})
             plugins: [
                 history(),
                 menuBar({
                     floating: true, // toolbar 浮動置頂
-                    // content: [[r.toggleStrong]]
                     content: [[
                         new MenuItem({
                             select(state) {
-                                return toggleMark(schema.marks.strong)(state);
+                                return commands.toggleMark(nsSchema.marks.strong)(state);
                             },
                             active(state) {
                                 let {from, $from, to, empty} = state.selection;
                                 if(empty) {
                                     // 未框選時check游標是否在樣式的範圍內
-                                    return schema.marks.strong.isInSet(state.storedMarks || $from.marks())
+                                    return nsSchema.marks.strong.isInSet(state.storedMarks || $from.marks())
                                 } else {
                                     // 框選時check框選的部分是否包含有套用樣式的範圍
-                                    return state.doc.rangeHasMark(from, to, schema.marks.strong)
+                                    return state.doc.rangeHasMark(from, to, nsSchema.marks.strong)
                                 }
                             },
                             icon: {
@@ -87,20 +112,20 @@ class ProseMirror extends React.Component {
                             },
                             label: '',
                             title: '粗體',
-                            run: toggleMark(schema.marks.strong)
+                            run: commands.toggleMark(nsSchema.marks.strong)
                         }),
                         new MenuItem({
                             select(state) {
-                                return toggleMark(schema.marks.em)(state);
+                                return commands.toggleMark(nsSchema.marks.em)(state);
                             },
                             active(state) {
                                 let {from, $from, to, empty} = state.selection;
                                 if(empty) {
                                     // 未框選時check游標是否在樣式的範圍內
-                                    return schema.marks.em.isInSet(state.storedMarks || $from.marks())
+                                    return nsSchema.marks.em.isInSet(state.storedMarks || $from.marks())
                                 } else {
                                     // 框選時check框選的部分是否包含有套用樣式的範圍
-                                    return state.doc.rangeHasMark(from, to, schema.marks.em)
+                                    return state.doc.rangeHasMark(from, to, nsSchema.marks.em)
                                 }
                             },
                             icon: {
@@ -112,20 +137,20 @@ class ProseMirror extends React.Component {
                             },
                             label: '',
                             title: '斜體',
-                            run: toggleMark(schema.marks.em)
+                            run: commands.toggleMark(nsSchema.marks.em)
                         }),
                         new MenuItem({
                             select(state) {
-                                return toggleMark(schema.marks.u)(state);
+                                return commands.toggleMark(nsSchema.marks.u)(state);
                             },
                             active(state) {
                                 let {from, $from, to, empty} = state.selection;
                                 if(empty) {
                                     // 未框選時check游標是否在樣式的範圍內
-                                    return schema.marks.u.isInSet(state.storedMarks || $from.marks())
+                                    return nsSchema.marks.u.isInSet(state.storedMarks || $from.marks())
                                 } else {
                                     // 框選時check框選的部分是否包含有套用樣式的範圍
-                                    return state.doc.rangeHasMark(from, to, schema.marks.u)
+                                    return state.doc.rangeHasMark(from, to, nsSchema.marks.u)
                                 }
                             },
                             icon: {
@@ -137,20 +162,20 @@ class ProseMirror extends React.Component {
                             },
                             label: '',
                             title: '底線',
-                            run: toggleMark(schema.marks.u)
+                            run: commands.toggleMark(nsSchema.marks.u)
                         }),
                         new MenuItem({
                             select(state) {
-                                return toggleMark(schema.marks.del)(state);
+                                return commands.toggleMark(nsSchema.marks.del)(state);
                             },
                             active(state) {
                                 let {from, $from, to, empty} = state.selection;
                                 if(empty) {
                                     // 未框選時check游標是否在樣式的範圍內
-                                    return schema.marks.del.isInSet(state.storedMarks || $from.marks())
+                                    return nsSchema.marks.del.isInSet(state.storedMarks || $from.marks())
                                 } else {
                                     // 框選時check框選的部分是否包含有套用樣式的範圍
-                                    return state.doc.rangeHasMark(from, to, schema.marks.del)
+                                    return state.doc.rangeHasMark(from, to, nsSchema.marks.del)
                                 }
                             },
                             icon: {
@@ -162,20 +187,20 @@ class ProseMirror extends React.Component {
                             },
                             label: '',
                             title: '刪除線',
-                            run: toggleMark(schema.marks.del)
+                            run: commands.toggleMark(nsSchema.marks.del)
                         }),
                         new MenuItem({
                             select(state) {
-                                return toggleMark(schema.marks.link)(state);
+                                return commands.toggleMark(nsSchema.marks.link)(state);
                             },
                             active(state) {
                                 let {from, $from, to, empty} = state.selection;
                                 if(empty) {
                                     // 未框選時check游標是否在樣式的範圍內
-                                    return schema.marks.link.isInSet(state.storedMarks || $from.marks())
+                                    return nsSchema.marks.link.isInSet(state.storedMarks || $from.marks())
                                 } else {
                                     // 框選時check框選的部分是否包含有套用樣式的範圍
-                                    return state.doc.rangeHasMark(from, to, schema.marks.link)
+                                    return state.doc.rangeHasMark(from, to, nsSchema.marks.link)
                                 }
                             },
                             icon: {
@@ -189,14 +214,14 @@ class ProseMirror extends React.Component {
                             title: '連結',
                             run(state, dispatch, view) {
                                 if (this.active(state)) {
-                                    toggleMark(schema.marks.link)(state, dispatch);
+                                    commands.toggleMark(nsSchema.marks.link)(state, dispatch);
                                     return true;
                                 }
 
                                 let title = prompt('輸入名稱:'),
                                     href = prompt('輸入網址:');
 
-                                toggleMark(schema.marks.link, { title, href })(state, dispatch);
+                                commands.toggleMark(nsSchema.marks.link, { title, href })(state, dispatch);
                                 view.focus();
                             }
                         }),
@@ -208,7 +233,7 @@ class ProseMirror extends React.Component {
                                 for (let d = $from.depth; d >= 0; d--) {
                                     let index = $from.index(d);
 
-                                    if ($from.node(d).canReplaceWith(index, index, schema.nodes.image, attrs)) {
+                                    if ($from.node(d).canReplaceWith(index, index, nsSchema.nodes.image, attrs)) {
                                         return true;
                                     }
                                 }
@@ -226,13 +251,13 @@ class ProseMirror extends React.Component {
                             title: '插入圖片',
                             run(state, dispatch, view) {
                                 let {node, from, to} = state.selection,
-                                    attrs = schema.nodes.image && node && node.type == schema.nodes.image && node.attrs;
+                                    attrs = nsSchema.nodes.image && node && node.type == nsSchema.nodes.image && node.attrs;
 
                                 let title = prompt('輸入名稱:'),
                                     alt = prompt('替代名稱:'),
                                     src = prompt('輸入網址:');
 
-                                dispatch(state.tr.replaceSelectionWith(schema.nodes.image.createAndFill({ title, alt, src })));
+                                dispatch(state.tr.replaceSelectionWith(nsSchema.nodes.image.createAndFill({ title, alt, src })));
                                 view.focus();
                             }
                         }),
@@ -258,7 +283,7 @@ class ProseMirror extends React.Component {
                                 for (let d = $from.depth; d >= 0; d--) {
                                     let index = $from.index(d);
 
-                                    if ($from.node(d).canReplaceWith(index, index, schema.nodes.horizontal_rule, attrs)) {
+                                    if ($from.node(d).canReplaceWith(index, index, nsSchema.nodes.horizontal_rule, attrs)) {
                                         return true;
                                     }
                                 }
@@ -275,8 +300,22 @@ class ProseMirror extends React.Component {
                             label: '',
                             title: '插入分隔線',
                             run(state, dispatch, view) {
-                                dispatch(state.tr.replaceSelectionWith(schema.nodes.horizontal_rule.create()));
+                                dispatch(state.tr.replaceSelectionWith(nsSchema.nodes.horizontal_rule.create()));
                                 view.focus();
+                            }
+                        }),
+                        new MenuItem({
+                            icon: {
+                                dom: (() => {
+                                    let node = document.createElement('div');
+                                    node.innerText = '**插入表格';
+                                    return node;
+                                })()
+                            },
+                            label: '',
+                            title: '**插入表格',
+                            run(state, dispatch, view) {
+                                alert('待實作');
                             }
                         }),
                         new Dropdown([
@@ -321,17 +360,7 @@ class ProseMirror extends React.Component {
                         }),
                         new MenuItem({
                             select(state) {
-                                return true;
-                                console.log(schema.marks.strong)
-                                console.log(schema.nodes.bullet_list)
-                                console.log(wrapInList(schema.nodes.bullet_list))
-
-                                let {$from, $to} = state.selection
-                                let range = $from.blockRange($to), doJoin = false, outerRange = range
-                                console.log(range)
-                                let wrap = findWrapping(outerRange, schema.nodes.bullet_list, undefined, range)
-                                console.log(wrap)
-                                return wrapInList(schema.nodes.bullet_list)(state);
+                                return wrapInList(nsSchema.nodes.bullet_list)(state);
                             },
                             onDeselected: 'disable',
                             icon: {
@@ -343,12 +372,11 @@ class ProseMirror extends React.Component {
                             },
                             label: '',
                             title: '無序序列',
-                            run: wrapInList(schema.nodes.bullet_list)
+                            run: wrapInList(nsSchema.nodes.bullet_list)
                         }),
                         new MenuItem({
                             select(state) {
-                                return true;
-                                return wrapInList(schema.nodes.ordered_list)(state);
+                                return wrapInList(nsSchema.nodes.ordered_list)(state);
                             },
                             onDeselected: 'disable',
                             icon: {
@@ -360,7 +388,52 @@ class ProseMirror extends React.Component {
                             },
                             label: '',
                             title: '有序序列',
-                            run: wrapInList(schema.nodes.ordered_list)
+                            run: wrapInList(nsSchema.nodes.ordered_list)
+                        }),
+                        new MenuItem({
+                            select: state => commands.lift(state),
+                            onDeselected: 'disable',
+                            icon: icons.lift,
+                            title: "取消縮排",
+                            run: commands.lift
+                        }),
+                        new MenuItem({
+                            select: state => undo(state),
+                            onDeselected: 'disable',
+                            icon: icons.undo,
+                            title: "復原",
+                            run: undo
+                        }),
+                        new MenuItem({
+                            select: state => redo(state),
+                            onDeselected: 'disable',
+                            icon: icons.redo,
+                            title: "取消復原",
+                            run: redo
+                        }),
+                    // test icon
+                        new MenuItem({
+                            select(state) {
+                                return commands.wrapIn(nsSchema.nodes.blockquote)(state);
+                            },
+                            onDeselected: 'disable',
+                            icon: icons.blockquote,
+                            title: "blockQuote",
+                            run: commands.wrapIn(nsSchema.nodes.blockquote)
+                        }),
+                        new MenuItem({
+                            // select: state => sinkListItem(state),
+                            onDeselected: 'disable',
+                            icon: icons.lift,
+                            title: "縮排",
+                            run: sinkListItem(nsSchema.nodes.list_item)
+                        }),
+                        new MenuItem({
+                            // select: state => liftListItem(state),
+                            onDeselected: 'disable',
+                            icon: icons.lift,
+                            title: "取消縮排",
+                            run: liftListItem(nsSchema.nodes.list_item)
                         }),
                         // MenuItem Template
                         // new MenuItem({
@@ -424,18 +497,9 @@ class ProseMirror extends React.Component {
                         //     class: '',
                         //     css: ''
                         // }),
-                        // joinUpItem,
-                        // liftItem,
-                        // selectParentNodeItem,
-                        // undoItem,
-                        // redoItem
                     ]]
                 }),
-                keymap(baseKeymap),
-                keymap({
-                    'Mod-z': undo,
-                    'Mod-y': redo
-                })
+                keymap(baseKeymap)
             ]
         });
 

@@ -1,5 +1,14 @@
 .ProseMirror {
-    background: silver;
+    background: ghostwhite;
+    height: 300px;
+    border: 1px solid lightgray;
+    margin: 20px 0px;
+    overflow: scroll;
+
+    blockquote {
+      border-left: 3px solid lightgray;
+      padding-left: 20px;
+    }
 }
 
 
@@ -125,6 +134,7 @@
   border-top-right-radius: inherit;
   position: relative;
   min-height: 1em;
+  min-height: 40px !important; // custom
   color: #666;
   padding: 1px 6px;
   top: 0; left: 0; right: 0;
